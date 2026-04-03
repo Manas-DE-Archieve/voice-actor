@@ -1,8 +1,11 @@
 import requests
 import os
 from dotenv import load_dotenv
+from kyrgyz_normalizer import normalize  # Add this line
+from fastapi import FastAPI             # Add this line
 
 load_dotenv()
+app = FastAPI()  # Add this line
 
 # ========================
 # CONFIG
@@ -18,6 +21,7 @@ ASR_TOKEN = os.getenv("ASR_TOKEN")
 # TEXT → SPEECH
 # ========================
 def text_to_speech(text: str, output_file: str = "voice.mp3"):
+    text = normalize(text)  # Add this line here to clean the text first
     headers = {
         "Authorization": f"Bearer {TTS_TOKEN}",
         "Content-Type": "application/json",
@@ -68,7 +72,37 @@ def speech_to_text(file_path: str):
         print("❌ ASR ошибка:", response.status_code, response.text)
         return None
 
+from pydantic import BaseModel
 
+class TTSRequest(BaseModel):
+    text: str
+
+@app.post("/generate-voice")
+async def generate_voice(data: TTSRequest):
+    normalized_text = normalize(data.text)
+    result = text_to_speech(normalized_text)
+    
+    if result:
+        return {"status": "success", "file": result, "original_text": data.text, "normalized": normalized_text}
+    return {"status": "error", "message": "Failed to generate speech"}
+from fastapi import UploadFile, File
+
+@app.post("/transcribe-voice")
+async def transcribe_voice(file: UploadFile = File(...)):
+    # Save the uploaded file temporarily
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        buffer.write(await file.read())
+    
+    # Send it to the ASR function your teammate wrote
+    result = speech_to_text(temp_path)
+    
+    # Optional: remove the temp file after processing
+    # os.remove(temp_path)
+    
+    if result:
+        return {"status": "success", "data": result}
+    return {"status": "error", "message": "Failed to transcribe audio"}
 # ========================
 # PIPELINE
 # ========================
