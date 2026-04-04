@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from fastapi import FastAPI             # Add this line
 import time
 load_dotenv()
-app = FastAPI()  # Add this line
+app = FastAPI(root_path="/voice")  # Add this line
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
