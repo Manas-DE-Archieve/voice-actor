@@ -6,7 +6,14 @@ from fastapi import FastAPI             # Add this line
 
 load_dotenv()
 app = FastAPI()  # Add this line
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ========================
 # CONFIG
 # ========================
@@ -104,10 +111,7 @@ async def transcribe_voice(file: UploadFile = File(...)):
         return {"status": "success", "data": result}
     return {"status": "error", "message": "Failed to transcribe audio"}
 # ========================
-# PIPELINE
-# ========================
+# Replace the very last 5 lines of your file with this:
 if __name__ == "__main__":
-    audio = text_to_speech("кандайсын")
-
-    if audio:
-        speech_to_text(audio)
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
