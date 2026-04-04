@@ -2,8 +2,9 @@ import requests
 import os
 from dotenv import load_dotenv
 from kyrgyz_normalizer import normalize  # Add this line
+from fastapi.responses import Response
 from fastapi import FastAPI             # Add this line
-
+import time
 load_dotenv()
 app = FastAPI()  # Add this line
 from fastapi.middleware.cors import CORSMiddleware
@@ -90,7 +91,9 @@ async def generate_voice(data: TTSRequest):
     result = text_to_speech(normalized_text)
     
     if result:
-        return {"status": "success", "file": result, "original_text": data.text, "normalized": normalized_text}
+        with open(result, "rb") as f:
+            audio_bytes = f.read()
+        return Response(content=audio_bytes, media_type="audio/mpeg")
     return {"status": "error", "message": "Failed to generate speech"}
 from fastapi import UploadFile, File
 
@@ -114,4 +117,4 @@ async def transcribe_voice(file: UploadFile = File(...)):
 # Replace the very last 5 lines of your file with this:
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001)
